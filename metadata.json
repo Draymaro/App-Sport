@@ -1,0 +1,7 @@
+{
+  "name": "FitProgress - Suivi de Sport",
+  "description": "Application de suivi de séances de musculation avec minuteur, buzzer, graphiques de progression et analyse scientifique par IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
