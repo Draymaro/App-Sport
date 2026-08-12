@@ -189,6 +189,18 @@ class ActiveWorkoutViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun discardSession(
+        sessionId: Long,
+        onDiscarded: () -> Unit
+    ) {
+        viewModelScope.launch {
+            repository.deleteSession(sessionId)
+            timerJob?.cancel()
+            _isTimerRunning.value = false
+            onDiscarded()
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         buzzerManager.release()

@@ -24,6 +24,9 @@ import com.example.data.ExerciseSetEntity
 import com.example.data.SessionWithSets
 import com.example.ui.viewmodels.ActiveWorkoutViewModel
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActiveSessionScreen(
@@ -51,6 +54,7 @@ fun ActiveSessionScreen(
     val timerLabel by viewModel.timerLabel.collectAsState()
 
     var showFinishDialog by remember { mutableStateOf(false) }
+    var showQuitWithoutSaveDialog by remember { mutableStateOf(false) }
     var sessionNotes by remember { mutableStateOf(session.notes) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
 
@@ -76,6 +80,15 @@ fun ActiveSessionScreen(
                     }
                 },
                 actions = {
+                    OutlinedButton(
+                        onClick = { showQuitWithoutSaveDialog = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Quitter", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
                     Button(
                         onClick = { showFinishDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -383,6 +396,34 @@ fun ActiveSessionScreen(
         )
     }
 
+    // Quit Without Save Confirmation Dialog
+    if (showQuitWithoutSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showQuitWithoutSaveDialog = false },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text("Quitter la séance ?") },
+            text = {
+                Text("Voulez-vous vraiment quitter sans enregistrer ? Toutes les séries validées durant cette session seront effacées.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showQuitWithoutSaveDialog = false
+                        viewModel.discardSession(session.id, onFinishSession)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Quitter sans enregistrer", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQuitWithoutSaveDialog = false }) {
+                    Text("Poursuivre l'entraînement")
+                }
+            }
+        )
+    }
+
     // Finish Session Dialog
     if (showFinishDialog) {
         AlertDialog(
@@ -390,8 +431,13 @@ fun ActiveSessionScreen(
             icon = { Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
             title = { Text("Séance Terminée ! 👏") },
             text = {
-                Column {
-                    Text("Félicitations pour votre séance. Laissez une note sur votre ressentis (RPE, sensations) :")
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text("Félicitations pour votre séance. Laissez une note sur vos ressentis (RPE, sensations) :")
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = sessionNotes,
@@ -402,13 +448,30 @@ fun ActiveSessionScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showFinishDialog = false
-                        viewModel.finishSession(session, sessionNotes, onFinishSession)
-                    }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Enregistrer & Quitter")
+                    Button(
+                        onClick = {
+                            showFinishDialog = false
+                            viewModel.finishSession(session, sessionNotes, onFinishSession)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Enregistrer & Quitter")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            showFinishDialog = false
+                            showQuitWithoutSaveDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Quitter sans enregistrer")
+                    }
                 }
             },
             dismissButton = {

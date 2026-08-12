@@ -62,6 +62,7 @@ fun RoutineEditorDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .imePadding()
                     .padding(20.dp)
             ) {
                 // Header

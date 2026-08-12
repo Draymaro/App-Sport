@@ -112,6 +112,7 @@ fun FitProgressApp(
     var selectedTab by remember { mutableStateOf(ScreenTab.HOME) }
 
     val isDarkMode by mainViewModel.isDarkMode.collectAsStateWithLifecycle()
+    val userBodyweightKg by mainViewModel.userBodyweightKg.collectAsStateWithLifecycle()
     val routines by mainViewModel.routines.collectAsStateWithLifecycle()
     val allExercises by mainViewModel.allExercises.collectAsStateWithLifecycle()
     val activeSession by mainViewModel.activeSession.collectAsStateWithLifecycle()
@@ -186,9 +187,12 @@ fun FitProgressApp(
                     HomeScreen(
                         isDarkMode = isDarkMode,
                         onToggleDarkMode = { mainViewModel.toggleDarkMode() },
+                        userBodyweightKg = userBodyweightKg,
+                        onUpdateBodyweight = { mainViewModel.setUserBodyweight(it) },
                         routines = routines,
                         activeSession = activeSession,
                         completedSessions = completedSessions,
+                        allExercises = allExercises,
                         onStartRoutine = { routine ->
                             mainViewModel.startSessionFromRoutine(routine) {
                                 selectedTab = ScreenTab.ACTIVE
@@ -201,6 +205,15 @@ fun FitProgressApp(
                         },
                         onResumeActiveSession = { _ ->
                             selectedTab = ScreenTab.ACTIVE
+                        },
+                        onUpdateSession = { updatedSession, updatedSets ->
+                            mainViewModel.updateSessionDetails(updatedSession, updatedSets)
+                        },
+                        onDeleteSession = { sessionId ->
+                            mainViewModel.deleteSession(sessionId)
+                        },
+                        onCreateExercise = { name, cat, equip, notes ->
+                            mainViewModel.createNewExercise(name, cat, equip, notes)
                         },
                         onNavigateToRoutines = { selectedTab = ScreenTab.ROUTINES },
                         onNavigateToScience = { selectedTab = ScreenTab.SCIENCE },

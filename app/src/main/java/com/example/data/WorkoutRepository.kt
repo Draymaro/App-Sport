@@ -143,7 +143,7 @@ class WorkoutRepository(
     }
 
     // --- Progress & Analytics ---
-    fun getExerciseProgressHistory(exerciseId: Long): Flow<List<ExerciseProgressPoint>> {
+    fun getExerciseProgressHistory(exerciseId: Long, userBodyweightKg: Float = 75.0f): Flow<List<ExerciseProgressPoint>> {
         return completedSessionsWithSets.map { sessions ->
             sessions
                 .filter { session -> session.session.isCompleted }
@@ -153,15 +153,30 @@ class WorkoutRepository(
                     }
                     if (matchingSets.isEmpty()) return@mapNotNull null
 
-                    val maxWeight = matchingSets.maxOfOrNull { it.set.weightKg } ?: 0f
-                    val totalVolume = matchingSets.sumOf { (it.set.weightKg * it.set.reps).toDouble() }.toFloat()
+                    val sampleExercise = matchingSets.firstOrNull()?.exercise
+                    val isBodyweight = sampleExercise != null && (
+                        sampleExercise.equipment.contains("Poids du corps", ignoreCase = true) ||
+                        sampleExercise.equipment.contains("Poids corps", ignoreCase = true) ||
+                        sampleExercise.category.contains("Poids du corps", ignoreCase = true) ||
+                        sampleExercise.name.contains("Pompe", ignoreCase = true) ||
+                        sampleExercise.name.contains("Traction", ignoreCase = true) ||
+                        sampleExercise.name.contains("Dip", ignoreCase = true)
+                    )
+
+                    fun getEffectiveWeight(setWeight: Float): Float {
+                        return if (isBodyweight) userBodyweightKg + setWeight else setWeight
+                    }
+
+                    val maxWeight = matchingSets.maxOfOrNull { getEffectiveWeight(it.set.weightKg) } ?: 0f
+                    val totalVolume = matchingSets.sumOf { (getEffectiveWeight(it.set.weightKg) * it.set.reps).toDouble() }.toFloat()
                     val totalReps = matchingSets.sumOf { it.set.reps }
 
                     // Compute max 1RM using Epley formula on best set
-                    val bestSet = matchingSets.maxByOrNull { it.set.weightKg * (1f + it.set.reps / 30f) }
+                    val bestSet = matchingSets.maxByOrNull { getEffectiveWeight(it.set.weightKg) * (1f + it.set.reps / 30f) }
                     val est1RM = if (bestSet != null) {
-                        if (bestSet.set.reps == 1) bestSet.set.weightKg
-                        else bestSet.set.weightKg * (1f + bestSet.set.reps / 30f)
+                        val effWeight = getEffectiveWeight(bestSet.set.weightKg)
+                        if (bestSet.set.reps == 1) effWeight
+                        else effWeight * (1f + bestSet.set.reps / 30f)
                     } else 0f
 
                     ExerciseProgressPoint(

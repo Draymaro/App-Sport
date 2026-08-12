@@ -7,7 +7,12 @@ import com.example.data.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+import com.example.util.UserPreferences
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    val userPreferences = UserPreferences(application)
+    val userBodyweightKg: StateFlow<Float> = userPreferences.userBodyweightKg
 
     val db = AppDatabase.getInstance(application)
     val repository = WorkoutRepository(
@@ -43,6 +48,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.allSessionsWithSets.firstOrNull()?.firstOrNull { !it.session.isCompleted }?.let {
                 _activeSessionId.value = it.session.id
+            }
+        }
+    }
+
+    fun setUserBodyweight(weightKg: Float) {
+        userPreferences.setUserBodyweightKg(weightKg)
+    }
+
+    fun deleteSession(sessionId: Long) {
+        viewModelScope.launch {
+            if (_activeSessionId.value == sessionId) {
+                _activeSessionId.value = null
+            }
+            repository.deleteSession(sessionId)
+        }
+    }
+
+    fun updateSessionDetails(
+        session: WorkoutSessionEntity,
+        updatedSets: List<ExerciseSetEntity>
+    ) {
+        viewModelScope.launch {
+            repository.updateSession(session)
+            updatedSets.forEach { set ->
+                repository.insertOrUpdateSet(set)
             }
         }
     }
